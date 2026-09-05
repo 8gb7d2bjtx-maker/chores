@@ -53,6 +53,15 @@
         flex-direction: column;
     }
 
+    .eyebrow {
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        color: var(--muted);
+        margin: 0 0 10px;
+    }
+
     .nav-row {
         display: flex;
         align-items: center;
@@ -177,6 +186,7 @@
 </head>
 <body>
     <div class="wrap">
+        <p class="eyebrow">SATURDAY CHORES</p>
         <div class="nav-row">
             <button class="nav-btn" id="backBtn" aria-label="Previous week">&#8592;</button>
             <div class="date-block">
@@ -196,8 +206,8 @@
        tab > CSV format > copy the link.
        Leave OVERRIDES_CSV_URL as '' if you don't use that tab.
        ========================================================= */
-    const CONFIG_CSV_URL = 'PASTE_CONFIG_TAB_CSV_LINK_HERE';
-    const ROTATION_CSV_URL = 'PASTE_ROTATION_TAB_CSV_LINK_HERE';
+    const CONFIG_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT12LBamSudFd7ae__jYZOu8PWVNjLbxyEIUl5ZTm0cDW5EBXwia0Wlv20PfKRfqI3RvW6hkF3FBI6e/pub?gid=0&single=true&output=csv';
+    const ROTATION_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT12LBamSudFd7ae__jYZOu8PWVNjLbxyEIUl5ZTm0cDW5EBXwia0Wlv20PfKRfqI3RvW6hkF3FBI6e/pub?gid=1775325996&single=true&output=csv';
     const OVERRIDES_CSV_URL = '';
 
     /* Demo data used until real links are pasted in, or if a fetch fails. */
@@ -345,7 +355,6 @@
 
     function formatDate(date) {
         return date.toLocaleDateString('en-US', {
-            weekday: 'long',
             month: 'long',
             day: 'numeric'
         });
