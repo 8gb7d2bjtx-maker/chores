@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saturday Chores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg: #0F1117;
+    --bg2: #181B24;
+    --card: #1E2130;
+    --card2: #252838;
+    --border: #2A2E42;
+    --border2: #363B56;
+    --text: #F0F2FA;
+    --muted: #7C82A0;
+    --subtle: #4A4F6A;
+    --accent: #E8B84B;
+    --accent2: #F5D07A;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 26px;
+  }
+  .nav-btn {
+    border: 1px solid var(--border2);
+    background: var(--card);
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    font-size: 18px;
+    color: var(--accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s ease;
+  }
+  .nav-btn:hover { border-color: var(--accent); }
+  .nav-btn:active { transform: scale(0.92); }
+  .nav-btn:disabled { opacity: 0.35; cursor: default; }
+  .date-block {
+    text-align: center;
+    min-width: 200px;
+  }
+  .date-main {
+    font-family: 'Bebas Neue', sans-serif;
+    font-weight: 400;
+    font-size: 30px;
+    letter-spacing: 1.5px;
+    line-height: 1.15;
+    margin: 0;
+  }
+  .chore-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 6px;
+  }
+  .chore-row {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 20px 20px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .chore-row::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #DC2626, #EF4444);
+  }
+  .chore-row:nth-child(3n+2)::before { background: linear-gradient(90deg, #16A34A, #4ADE80); }
+  .chore-row:nth-child(3n+3)::before { background: linear-gradient(90deg, #1D4ED8, #60A5FA); }
+  .chore-kid {
+    font-family: 'Bebas Neue', sans-serif;
+    font-weight: 400;
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+  .chore-name {
+    font-size: 15px;
+    color: var(--muted);
+  }
+  .banner {
+    background: var(--card2);
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .state-msg {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 10px;
+    font-size: 15px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav-row">
+    <button class="nav-btn" id="backBtn" aria-label="Previous week">&#8592;</button>
+    <div class="date-block">
+      <p class="date-main" id="dateMain">Loading…</p>
+    </div>
+    <button class="nav-btn" id="fwdBtn" aria-label="Next week">&#8594;</button>
+  </div>
+
+  <div id="banner"></div>
+  <div id="content"></div>
+</div>
+
+<script>
+/* =========================================================
+   SETUP — paste your published Google Sheet CSV links below.
+   File > Share > Publish to web > choose the specific sheet
+   tab > CSV format > copy the link.
+   Leave OVERRIDES_CSV_URL as '' if you don't use that tab.
+   ========================================================= */
+const CONFIG_CSV_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT12LBamSudFd7ae__jYZOu8PWVNjLbxyEIUl5ZTm0cDW5EBXwia0Wlv20PfKRfqI3RvW6hkF3FBI6e/pub?gid=0&single=true&output=csv';
+const ROTATION_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT12LBamSudFd7ae__jYZOu8PWVNjLbxyEIUl5ZTm0cDW5EBXwia0Wlv20PfKRfqI3RvW6hkF3FBI6e/pub?gid=1775325996&single=true&output=csv';
+const OVERRIDES_CSV_URL = '';
+
+/* Demo data used until real links are pasted in, or if a fetch fails. */
+const DEMO_START_DATE = '2026-09-06'; // must be a Saturday
+const DEMO_ROTATION = [
+  { kid: 'Ava',  chore: 'Dishes' },
+  { kid: 'Ben',  chore: 'Trash & Recycling' },
+  { kid: 'Cleo', chore: 'Vacuum Living Room' }
+];
+const DEMO_OVERRIDES = []; // { date: 'YYYY-MM-DD', kid, chore }
+
+/* ========================= App logic ========================= */
+
+let startDate = null;   // Date object, the Saturday that anchors week 0
+let rotation = [];       // [{kid, chore}, ...] in order
+let overrides = [];      // [{date, kid, chore}, ...]
+let usingDemoData = false;
+let currentSaturday = null; // Date currently displayed
+
+function parseISODate(str) {
+  const [y, m, d] = str.trim().split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function toISODate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getWeekSaturday(date) {
+  const day = date.getDay(); // 0 = Sun ... 6 = Sat
+  const diff = (6 - day + 7) % 7;
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function weeksBetween(a, b) {
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  return Math.round((b - a) / msPerWeek);
+}
+
+function fetchCSV(url) {
+  return new Promise((resolve, reject) => {
+    Papa.parse(url, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => resolve(results.data),
+      error: (err) => reject(err)
+    });
+  });
+}
+
+async function loadData() {
+  const placeholdersLeft =
+    CONFIG_CSV_URL.startsWith('PASTE_') || ROTATION_CSV_URL.startsWith('PASTE_');
+
+  if (placeholdersLeft) {
+    useDemoData();
+    showBanner("Showing sample chores. Paste your Google Sheet links into the code to go live.");
+    return;
+  }
+
+  try {
+    const configRows = await fetchCSV(CONFIG_CSV_URL);
+    const startRow = configRows.find(r => (r.Key || '').trim().toLowerCase() === 'startdate');
+    if (!startRow || !startRow.Value) throw new Error('StartDate not found in Config tab');
+    startDate = getWeekSaturday(parseISODate(startRow.Value.trim()));
+
+    const rotationRows = await fetchCSV(ROTATION_CSV_URL);
+    rotation = rotationRows
+      .filter(r => r.Kid && r.Chore)
+      .sort((a, b) => Number(a.Order) - Number(b.Order))
+      .map(r => ({ kid: r.Kid.trim(), chore: r.Chore.trim() }));
+
+    if (rotation.length === 0) throw new Error('No rotation rows found');
+
+    if (OVERRIDES_CSV_URL) {
+      const overrideRows = await fetchCSV(OVERRIDES_CSV_URL);
+      overrides = overrideRows
+        .filter(r => r.Date && r.Kid && r.Chore)
+        .map(r => ({ date: r.Date.trim(), kid: r.Kid.trim(), chore: r.Chore.trim() }));
+    }
+
+    usingDemoData = false;
+  } catch (err) {
+    console.error('Falling back to demo data:', err);
+    useDemoData();
+    showBanner("Couldn't load your Google Sheet, so sample chores are shown. Check that both tabs are published to the web.");
+  }
+}
+
+function useDemoData() {
+  startDate = getWeekSaturday(parseISODate(DEMO_START_DATE));
+  rotation = DEMO_ROTATION;
+  overrides = DEMO_OVERRIDES;
+  usingDemoData = true;
+}
+
+function showBanner(msg) {
+  document.getElementById('banner').innerHTML = `<div class="banner">${msg}</div>`;
+}
+
+function computeAssignments(saturday) {
+  const n = rotation.length;
+  const weekIndex = weeksBetween(startDate, saturday);
+  const iso = toISODate(saturday);
+
+  return rotation.map((entry, i) => {
+    const idx = ((i + weekIndex) % n + n) % n;
+    let chore = rotation[idx].chore;
+
+    const override = overrides.find(o => o.date === iso && o.kid === entry.kid);
+    if (override) chore = override.chore;
+
+    return { kid: entry.kid, chore };
+  });
+}
+
+function formatDate(date) {
+  return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+function render() {
+  const assignments = computeAssignments(currentSaturday);
+
+  document.getElementById('dateMain').textContent = formatDate(currentSaturday);
+
+  const content = document.getElementById('content');
+  if (assignments.length === 0) {
+    content.innerHTML = `<p class="state-msg">No chores set up yet.</p>`;
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="chore-list">
+      ${assignments.map(a => `
+        <div class="chore-row">
+          <span class="chore-kid">${escapeHTML(a.kid)}</span>
+          <span class="chore-name">${escapeHTML(a.chore)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function goBack() {
+  currentSaturday.setDate(currentSaturday.getDate() - 7);
+  render();
+}
+
+function goForward() {
+  currentSaturday.setDate(currentSaturday.getDate() + 7);
+  render();
+}
+
+async function init() {
+  await loadData();
+  currentSaturday = getWeekSaturday(new Date());
+  document.getElementById('backBtn').addEventListener('click', goBack);
+  document.getElementById('fwdBtn').addEventListener('click', goForward);
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
